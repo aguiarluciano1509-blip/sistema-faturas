@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <title>Fatura</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.debug.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; background-color: #f9f9f9; }
     header { text-align: center; margin-bottom: 30px; }
-    header img { max-width: 120px; margin-bottom: 10px; }
+    header img { max-width: 140px; margin-bottom: 10px; }
     h1 { color: #333; margin: 10px 0; }
-    .info { display: flex; justify-content: space-between; margin-bottom: 20px; }
-    .box { background: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 6px; width: 48%; }
+    .info { display: flex; justify-content: space-between; margin-bottom: 20px; gap: 20px; }
+    .box { background: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 6px; width: 50%; box-sizing: border-box; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; }
     th { background-color: #0073e6; color: #fff; }
     table, th, td { border: 1px solid #ddd; }
@@ -26,7 +27,7 @@
 <body id="conteudo">
 
   <header>
-    <img src="logo.jpeg" alt="Logo da Empresa">
+    <img src="logo.png" alt="Logo da Empresa">
     <h1>FATURA</h1>
     <h3>Fatura Nº: <span id="numeroFatura"></span></h3>
   </header>
@@ -139,23 +140,42 @@
     }
 
     async function gerarPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
+      const element = document.body;
 
-      doc.html(document.body, {
-        callback: function (doc) {
-          doc.save("fatura.pdf");
-          salvarFatura();
-          incrementarNumeroFatura();
-          carregarNumeroFatura();
-        },
-        x: 10,
-        y: 10
+      html2canvas(element, { scale: 2 }).then(canvas => {
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF("p", "mm", "a4");
+
+        const imgWidth = 210;
+        const pageHeight = 295;
+        const imgHeight = canvas.height * imgWidth / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+
+        while (heightLeft >= 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+
+        pdf.save("fatura.pdf");
+
+        salvarFatura();
+        incrementarNumeroFatura();
+        carregarNumeroFatura();
       });
     }
 
-    window.onload = carregarNumeroFatura;
+    window.onload = function() {
+      carregarNumeroFatura();
+      calcularTotais();
+    };
   </script>
 
 </body>
 </html>
+
